@@ -1,130 +1,103 @@
-# UX Anomalies UI Foundation
+# UX Anomalies UI
 
-Production-ready frontend foundation for `uxanomalies.com` using Next.js App Router, TypeScript, Tailwind CSS, TanStack Query, and NextAuth OAuth.
+Production-ready Next.js App Router frontend for [uxanomalies.com](https://uxanomalies.com), deployed behind a server-side BFF layer.
 
-## Required environment variables
-
-Create `.env.local`:
-
-```bash
-BACKEND_API_BASE_URL=https://api.uxanomalies.com
-BFF_SECRET=your_server_only_bff_secret
-NEXT_PUBLIC_APP_URL=https://uxanomalies.com
-
-AUTH_SECRET=your_nextauth_secret
-NEXTAUTH_URL=https://uxanomalies.com
-
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-
-GITHUB_CLIENT_ID=your_github_client_id
-GITHUB_CLIENT_SECRET=your_github_client_secret
-
-# Optional override (default is already /v1/internal/auth/oauth-upsert)
-BACKEND_OAUTH_SYNC_PATH=/v1/internal/auth/oauth-upsert
-```
-
-## Security architecture
+## Architecture
 
 Browser/client components never call the Go backend directly.
 
-Flow:
+- Browser -> Next.js routes/server components
+- Next.js BFF -> Go backend (`BACKEND_API_BASE_URL`)
+- Every backend call attaches `X-BFF-Secret` server-side
 
-- Browser -> Next.js route handlers / server components
-- Next.js server-side API client -> Go backend (`https://api.uxanomalies.com`)
-- Every backend request attaches server-side header:
-  - `X-BFF-Secret: process.env.BFF_SECRET`
+`BFF_SECRET` and backend tokens are never exposed to the browser.
 
-`BFF_SECRET` is never exposed in client-side code.
+## Required environment variables
 
-## OAuth handshake with backend
+Set these in Cloud Run (and locally via `.env.local` as needed):
 
-OAuth authentication with Google/GitHub is performed by NextAuth. During server-side callbacks, frontend syncs the OAuth identity to the Go backend before user session is considered valid for app actions.
+```bash
+NEXT_PUBLIC_APP_URL=https://uxanomalies.com
+NEXTAUTH_URL=https://uxanomalies.com
+AUTH_SECRET=<secret>
 
-- Sync function: `src/lib/api/auth-server.ts`
-- Sync endpoint path:
-  - default: `/v1/internal/auth/oauth-upsert`
-  - override: `BACKEND_OAUTH_SYNC_PATH`
+BACKEND_API_BASE_URL=https://api.uxanomalies.com
+BFF_SECRET=<secret>
 
-Exact request sent to backend:
+GOOGLE_CLIENT_ID=<prod-google-client-id>
+GOOGLE_CLIENT_SECRET=<prod-google-client-secret>
+GITHUB_CLIENT_ID=<prod-github-client-id>
+GITHUB_CLIENT_SECRET=<prod-github-client-secret>
 
-```json
-{
-  "provider": "google | github",
-  "provider_user_id": "provider account id",
-  "email": "user email",
-  "verified_email": true,
-  "name": "display name",
-  "avatar_url": "profile image url"
-}
+# Optional (useful behind proxies / managed ingress)
+AUTH_TRUST_HOST=true
+
+# Optional
+NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION=<google-site-verification-token>
+NEXT_PUBLIC_GA_MEASUREMENT_ID=<ga-id>
+BACKEND_OAUTH_SYNC_PATH=/v1/internal/auth/oauth-upsert
 ```
 
-Verification source:
+## Cloud Run deployment readiness
 
-- Google: read from provider profile (`email_verified`).
-- GitHub: basic profile may not include a reliable verified-email flag; when unavailable, frontend sends no verified flag and backend policy decides whether to reject or perform server-side email verification lookup.
+### Container
 
-Expected backend response shape:
+- Multi-stage Docker build with Node 22
+- `npm ci` + `npm run build`
+- Next.js standalone output enabled (`output: "standalone"`)
+- Runtime starts via `node server.js`
+- Listens on `PORT` (default `8080`)
+- Secrets are injected at runtime via Cloud Run env vars (not baked into image)
 
-```json
-{
-  "user": {
-    "user_id": "...",
-    "email": "...",
-    "nickname": "...",
-    "avatar_url": "..."
-  },
-  "token": "..."
-}
+### Build and run locally via Docker
+
+```bash
+docker build -t ux-anomalies-ui .
+docker run --rm -p 8080:8080 \
+  -e PORT=8080 \
+  -e NEXT_PUBLIC_APP_URL=https://uxanomalies.com \
+  -e NEXTAUTH_URL=https://uxanomalies.com \
+  -e AUTH_SECRET=replace-me \
+  -e BACKEND_API_BASE_URL=https://api.uxanomalies.com \
+  -e BFF_SECRET=replace-me \
+  -e GOOGLE_CLIENT_ID=replace-me \
+  -e GOOGLE_CLIENT_SECRET=replace-me \
+  -e GITHUB_CLIENT_ID=replace-me \
+  -e GITHUB_CLIENT_SECRET=replace-me \
+  ux-anomalies-ui
 ```
 
-Response mapping used by frontend:
+## Domain and redirect policy
 
-- `user.user_id -> appUserId`
-- `user.nickname -> nickname`
-- `user.avatar_url -> avatarUrl`
-- `token -> backendAccessToken` (JWT/server context only)
-- `role -> "user"` (default when backend does not return role)
+Canonical domain: `https://uxanomalies.com`
 
-If provider OAuth succeeds but backend sync fails, sign-in is rejected and user is redirected to `/login?error=BackendSyncFailed`.
+`https://www.uxanomalies.com` is permanently redirected (`308`) to apex in production, preserving path and query.
 
-## Protected BFF calls and user identity
+Implemented in `src/middleware.ts`.
 
-For protected backend operations, use server-side helpers only:
+## SEO status
 
-- `getBackendUserContextFromRequest()` from `src/lib/auth/server-auth.ts`
-- `backendProtectedRequest()` from `src/lib/api/server.ts`
+- Global metadata in `src/app/layout.tsx`
+  - title template: `%s | UX Anomalies`
+  - default title: `UX Anomalies`
+  - description: `Social platform for spotting real-world UX anomalies.`
+  - OpenGraph/Twitter metadata configured
+  - `metadataBase` from `NEXT_PUBLIC_APP_URL`
+- `src/app/robots.ts` present
+  - allows `/`
+  - disallows `/api/`, `/login`, `/register`, `/profile`, `/submit`
+- `src/app/sitemap.ts` present (static fallback)
+- `/login`, `/register`, `/profile`, `/submit` marked `noindex, nofollow`
+- Manifest and icons are available via App Router metadata files
 
-This attaches user identity to backend calls in addition to `X-BFF-Secret`:
+## OAuth production checklist
 
-- `X-App-User-Id: <appUserId>`
-- `Authorization: Bearer <backendAccessToken>` when backend token exists
+In Google and GitHub OAuth console/apps, add production callback URL:
 
-`backendAccessToken` is kept out of client session payload and is read from server-side JWT context only.
-No auth secrets/tokens are stored in `localStorage`.
+- `https://uxanomalies.com/api/auth/callback/google`
+- `https://uxanomalies.com/api/auth/callback/github`
 
-## Implemented routes
-
-- `/` Feed scaffold with loading/error/empty states
-- `/anomalies/[slug]` Detail page scaffold
-- `/login` OAuth login page (Google + GitHub)
-- `/register` redirects to `/login`
-- `/profile` session-protected page mapped to backend identity fields
-- `/submit` submit flow placeholder
-- `/api/auth/me` session-to-backend identity debug route
-
-## Auth implementation
-
-- NextAuth route handler at `src/app/api/auth/[...nextauth]/route.ts`
-- Providers:
-  - Google
-  - GitHub
-- Session-aware nav (login/logout/profile)
-- Protected UI actions route unauthenticated users to `/login?next=...`
-
-## Backend integration TODO
-
-- Confirm whether backend should return role in OAuth upsert response; if added, map it instead of using frontend default `"user"`.
+Also add the apex site URL/origin where required by provider settings.
 
 ## Development
 
