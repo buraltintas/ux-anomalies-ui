@@ -1,0 +1,10 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="uxa-brand-mark" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7C3AED"/>
+      <stop offset="1" stop-color="#4C1D95"/>
+    </linearGradient>
+  </defs>
+  <path d="M16 14H48L44 19L48 24L44 29L48 34L44 39L48 44M16 14C12.7 14 10 16.7 10 20V44C10 47.3 12.7 50 16 50H41" stroke="url(#uxa-brand-mark)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M30 29L53 44L42 47L48 57L42 61L36 50L28 58L30 29Z" fill="url(#uxa-brand-mark)" stroke="#FAF7F2" stroke-width="1.5" stroke-linejoin="round"/>
+</svg>
