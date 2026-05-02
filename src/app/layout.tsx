@@ -7,6 +7,7 @@ import { AppShell } from "@/components/layout/app-shell";
 const appUrl =
   process.env.NEXT_PUBLIC_APP_URL ??
   (process.env.NODE_ENV === "production" ? "https://uxanomalies.com" : "http://localhost:3000");
+const iconVersion = "uxa-v2";
 
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
@@ -22,10 +23,11 @@ export const metadata: Metadata = {
   category: "technology",
   icons: {
     icon: [
-      { url: "/favicon.ico" },
-      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: `/icon.svg?v=${iconVersion}`, type: "image/svg+xml" },
+      { url: `/favicon.ico?v=${iconVersion}` },
     ],
-    apple: [{ url: "/apple-icon" }],
+    shortcut: [{ url: `/favicon.ico?v=${iconVersion}` }],
+    apple: [{ url: `/apple-icon?v=${iconVersion}` }],
   },
   verification: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
     ? {
