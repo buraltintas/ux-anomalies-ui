@@ -5,8 +5,7 @@ import { Providers } from "@/components/providers";
 import { AppShell } from "@/components/layout/app-shell";
 
 const appUrl =
-  process.env.NEXT_PUBLIC_APP_URL ??
-  (process.env.NODE_ENV === "development" ? "http://localhost:3000" : "https://uxanomalies.com");
+  process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
@@ -20,6 +19,13 @@ export const metadata: Metadata = {
   creator: "UX Anomalies",
   publisher: "UX Anomalies",
   category: "technology",
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/icon.svg", type: "image/svg+xml" },
+    ],
+    apple: [{ url: "/apple-icon" }],
+  },
   verification: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
     ? {
         google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION,

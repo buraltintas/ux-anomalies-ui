@@ -5,6 +5,7 @@ import * as Avatar from "@radix-ui/react-avatar";
 
 import { authOptions } from "@/lib/auth/auth";
 import { getProviderLabel, getUserAvatarSrc, getUserDisplayName, getUserInitials } from "@/lib/utils/user-display";
+import { ThemeToggle } from "@/components/profile/theme-toggle";
 
 export const metadata: Metadata = {
   robots: {
@@ -30,7 +31,7 @@ export default async function ProfilePage() {
   const providerLabel = getProviderLabel(session.user.provider);
 
   return (
-    <section className="mx-auto w-full max-w-2xl rounded-2xl border border-border/80 bg-card p-6 shadow-sm md:p-8">
+    <section className="mx-auto w-full max-w-2xl space-y-5 rounded-2xl border border-border/80 bg-card p-6 shadow-sm md:p-8">
       <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
         <Avatar.Root>
           <Avatar.Image
@@ -55,6 +56,7 @@ export default async function ProfilePage() {
           ) : null}
         </div>
       </div>
+      <ThemeToggle />
     </section>
   );
 }

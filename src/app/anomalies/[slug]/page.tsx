@@ -27,6 +27,18 @@ function normalizeDate(value?: string) {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
+function getCanonicalBaseUrl() {
+  return process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+}
+
+function getSafeDescription(value?: string | null) {
+  const fallback = "A public UX anomaly report.";
+  if (!value) return fallback;
+  const normalized = value.trim().replace(/\s+/g, " ");
+  if (!normalized) return fallback;
+  return normalized.length > 180 ? `${normalized.slice(0, 177)}...` : normalized;
+}
+
 async function getRequestOrigin() {
   const requestHeaders = await headers();
   const forwardedHost = requestHeaders.get("x-forwarded-host");
@@ -46,7 +58,10 @@ async function getRequestOrigin() {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const appUrl = await getRequestOrigin();
+  const canonicalBaseUrl = getCanonicalBaseUrl();
   const requestHeaders = await headers();
+  const canonicalPath = `/anomalies/${slug}`;
+  const canonicalUrl = `${canonicalBaseUrl}${canonicalPath}`;
 
   try {
     const response = await fetch(`${appUrl}/api/anomalies/by-slug/${slug}`, {
@@ -55,7 +70,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     });
     if (response.status === 404) {
       return {
-        title: "Anomaly not found · UX Anomalies",
+        title: "Anomaly not found",
+        alternates: {
+          canonical: canonicalPath,
+        },
       };
     }
     if (!response.ok) {
@@ -63,21 +81,59 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
     const data = (await response.json()) as AnomalyDetailResponse;
     const anomaly = data.anomaly ?? data;
+    const title = anomaly.title ? `${anomaly.title} | UX Anomalies` : "UX Anomaly | UX Anomalies";
+    const description = getSafeDescription(anomaly.description);
+    const firstImageUrl = anomaly.images?.find((image) => Boolean(image?.url?.trim()))?.url ?? "/opengraph-image";
 
     return {
-      title: anomaly.title ? `${anomaly.title} · UX Anomalies` : "UX Anomaly · UX Anomalies",
-      description: anomaly.description ?? "A public UX anomaly report.",
+      title,
+      description,
+      alternates: {
+        canonical: canonicalPath,
+      },
+      openGraph: {
+        type: "article",
+        url: canonicalUrl,
+        title,
+        description,
+        images: [firstImageUrl],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title,
+        description,
+        images: [firstImageUrl],
+      },
     };
   } catch (error) {
     if (isBackendError(error) && error.status === 404) {
       return {
-        title: "Anomaly not found · UX Anomalies",
+        title: "Anomaly not found",
+        alternates: {
+          canonical: canonicalPath,
+        },
       };
     }
 
     return {
-      title: "UX Anomaly · UX Anomalies",
+      title: "UX Anomaly | UX Anomalies",
       description: "A public UX anomaly report.",
+      alternates: {
+        canonical: canonicalPath,
+      },
+      openGraph: {
+        type: "article",
+        url: canonicalUrl,
+        title: "UX Anomaly | UX Anomalies",
+        description: "A public UX anomaly report.",
+        images: ["/opengraph-image"],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: "UX Anomaly | UX Anomalies",
+        description: "A public UX anomaly report.",
+        images: ["/twitter-image"],
+      },
     };
   }
 }

@@ -17,7 +17,7 @@ export async function AppShell({ children }: Props) {
       <Sidebar session={session} />
       <div className="flex min-h-screen flex-1 flex-col">
         <TopBar session={session} />
-        <main className="flex-1 px-4 pb-24 pt-4 md:px-6 md:pt-6">{children}</main>
+        <main className="flex-1 px-4 pb-36 pt-4 md:px-6 md:pt-6 lg:pb-6">{children}</main>
       </div>
       <MobileNav session={session} />
     </div>

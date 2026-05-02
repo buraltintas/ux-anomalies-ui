@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import { LogoLockup } from "@/components/brand/logo-lockup";
 import { OAuthButtons } from "@/components/auth/oauth-buttons";
@@ -42,7 +43,15 @@ export default async function LoginPage({
       ) : null}
       <OAuthButtons />
       <p className="mt-5 text-center text-xs text-muted-foreground">
-        By continuing, you agree to upcoming terms and privacy policies.
+        By continuing, you agree to the{" "}
+        <Link href="/terms" className="underline-offset-2 hover:text-foreground hover:underline">
+          Terms of Use
+        </Link>{" "}
+        and{" "}
+        <Link href="/privacy" className="underline-offset-2 hover:text-foreground hover:underline">
+          Privacy Policy
+        </Link>
+        .
       </p>
     </div>
   );

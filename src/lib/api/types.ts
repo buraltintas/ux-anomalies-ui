@@ -104,6 +104,8 @@ export interface PublicSitemapEntry {
   slug: string;
   updated_at?: string;
   updatedAt?: string;
+  created_at?: string;
+  createdAt?: string;
 }
 
 export type OAuthProvider = 'google' | 'github';

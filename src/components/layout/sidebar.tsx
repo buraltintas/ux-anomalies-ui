@@ -87,6 +87,17 @@ export function Sidebar({ session }: { session: Session | null }) {
             </Link>
           </Button>
         )}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-1 text-xs text-muted-foreground">
+          <Link href="/about" className="hover:text-foreground hover:underline">
+            About
+          </Link>
+          <Link href="/terms" className="hover:text-foreground hover:underline">
+            Terms
+          </Link>
+          <Link href="/privacy" className="hover:text-foreground hover:underline">
+            Privacy
+          </Link>
+        </div>
       </div>
     </aside>
   );
