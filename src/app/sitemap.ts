@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 
 import type { PublicSitemapEntry } from "@/lib/api/types";
 
+export const dynamic = "force-dynamic";
 export const revalidate = 3600;
 
 interface BackendSitemapPage {
@@ -18,7 +19,10 @@ function getLastModified(entry: PublicSitemapEntry) {
 }
 
 function getAppUrl() {
-  return process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL;
+  }
+  return process.env.NODE_ENV === "production" ? "https://uxanomalies.com" : "http://localhost:3000";
 }
 
 async function fetchAllPublicAnomaliesForSitemap() {
